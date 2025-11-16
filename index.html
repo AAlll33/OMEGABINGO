@@ -70,37 +70,61 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
 
-        /* Estilos de botones de cartón */
-        .card-selector-btn {
-            width: 45px;
-            height: 45px;
+        /* * ESTILOS DE BOTONES DE CARTÓN (MODIFICADOS)
+         * Se cambia de card-selector-btn a card-item-container para el contenedor general 
+         */
+        .card-item-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .card-item-container:hover { transform: scale(1.05); }
+
+        .bingo-ball {
+            width: 50px;
+            height: 50px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 14px;
-            font-weight: bold;
+            font-size: 18px;
+            font-weight: 900;
             border-radius: 50%;
-            cursor: pointer;
-            transition: transform 0.1s, opacity 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: background-color 0.1s, transform 0.1s;
         }
-        .card-selector-btn:hover { transform: scale(1.05); }
+        
+        .ver-tag {
+            font-size: 11px;
+            font-weight: bold;
+            background-color: #fcd34d; /* Amarillo para 'Ver' */
+            color: #1f2937;
+            padding: 0 6px;
+            margin-top: 4px;
+            border-radius: 4px;
+            border: 1px solid #fbbf24;
+            user-select: none;
+        }
 
         /* Colores de estado del cartón (Morado OMEGA) */
-        .status-available {
+        .status-available .bingo-ball {
             background-color: #6b21a8; /* Morado: Disponible */
             color: white;
             border: 2px solid #5b21b6;
         }
-        .status-selected {
+        .status-selected .bingo-ball {
             background-color: #fcd34d; /* Amarillo: Seleccionado */
             color: #1f2937; 
             border: 2px solid #fbbf24;
             transform: scale(1.08);
+            box-shadow: 0 6px 10px rgba(0,0,0,0.4);
         }
-        .status-sold {
+        .status-sold .bingo-ball {
             background-color: #ef4444; /* Rojo: Vendido */
             color: white;
-            opacity: 0.6; 
+            opacity: 0.7; 
             cursor: not-allowed;
             border: 2px solid #b91c1c;
         }
@@ -143,34 +167,6 @@
             color: #fcd34d; 
             text-shadow: 2px 2px 0 #5b21b6; 
             line-height: 1;
-        }
-
-        /* Estilo para los botones de la bolita de bingo */
-        .bingo-ball-btn {
-            background-color: #6b21a8; 
-            color: white;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            border: 2px solid #fcd34d;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            transition: transform 0.2s;
-        }
-        .bingo-ball-btn:hover {
-            transform: scale(1.05);
-        }
-        .bingo-ball-btn .ver-text {
-            font-size: 10px;
-            font-weight: normal;
-            margin-top: -3px;
-            color: #fcd34d;
         }
     </style>
 </head>
@@ -501,7 +497,7 @@
 
 
         // =========================================================================
-        // FUNCIONES MODAL DE SELECCIÓN (PASO 1)
+        // FUNCIONES MODAL DE SELECCIÓN (PASO 1) - **MODIFICADAS**
         // =========================================================================
 
         function showCardSelectionModal() {
@@ -528,39 +524,51 @@
                     statusClass = 'status-selected';
                 }
 
-                const button = document.createElement('div');
-                
-                button.className = `card-selector-btn ${statusClass} active:scale-[0.98]`;
-                button.innerHTML = `${i} <span class="ver-text">VER</span>`;
-                button.dataset.cardNum = i;
-                button.title = isSold ? `Tabla vendida a ${CARD_SALES_DATA[i.toString()]?.name || 'Jugador Asignado'}` : `Tabla N° ${i}`;
+                // **Contenedor principal para la bola y el botón VER**
+                const itemContainer = document.createElement('div');
+                itemContainer.className = `card-item-container ${statusClass}`;
+                itemContainer.dataset.cardNum = i;
+                itemContainer.title = isSold ? `Tabla vendida a ${CARD_SALES_DATA[i.toString()]?.name || 'Jugador Asignado'}` : `Tabla N° ${i}`;
 
+                // **Elemento de la Bola (El área de clic principal)**
+                const ball = document.createElement('div');
+                ball.className = 'bingo-ball';
+                ball.textContent = i;
+                
+                // **Elemento del texto VER**
+                const verTag = document.createElement('div');
+                verTag.className = 'ver-tag';
+                verTag.textContent = 'VER';
+
+                // **Lógica de Clic**
                 if (!isSold) {
                     // Clic para SELECCIONAR/DESSELECCIONAR
-                    button.onclick = () => toggleCardSelection(i, button);
+                    itemContainer.onclick = () => toggleCardSelection(i, itemContainer);
                 } else {
-                    // Clic en vendida para ver (como en el ejemplo)
-                    button.onclick = () => showCardPreview(i);
+                    // Clic en vendida para ver (como en el ejemplo, abre un preview/alerta)
+                    itemContainer.onclick = () => showCardPreview(i);
                 }
                 
-                container.appendChild(button);
+                itemContainer.appendChild(ball);
+                itemContainer.appendChild(verTag);
+                container.appendChild(itemContainer);
             }
         }
 
-        function toggleCardSelection(cardNum, button) {
+        function toggleCardSelection(cardNum, itemContainer) {
             const index = selectedCards.indexOf(cardNum);
             
             if (index > -1) {
                 selectedCards.splice(index, 1);
-                button.classList.remove('status-selected');
-                button.classList.add('status-available');
+                itemContainer.classList.remove('status-selected');
+                itemContainer.classList.add('status-available');
             } else {
                 // Límite opcional si lo deseas, ej: Máximo 5 Tablas
                 // if (selectedCards.length >= 5) { alert('Máximo 5 Tablas por compra.'); return; } 
 
                 selectedCards.push(cardNum);
-                button.classList.add('status-selected');
-                button.classList.remove('status-available');
+                itemContainer.classList.add('status-selected');
+                itemContainer.classList.remove('status-available');
             }
             selectedCards.sort((a, b) => a - b);
             updateTotalCostDisplay();
@@ -569,7 +577,7 @@
         function showCardPreview(cardNumber) {
             // Esta función simula el "Ver" la tabla
             // Podrías usar esta lógica para cargar la imagen en un modal de vista previa.
-            alert(`Visualizando Tabla N° ${cardNumber}. Para ver los números completos, usa la sección de "Ver Tabla Individual" abajo.`);
+            alert(`Visualizando Tabla N° ${cardNumber}. Para ver los números completos, usa la sección de "Ver Tabla Individual" más abajo.`);
             // Aquí se podría abrir un tercer modal que muestre la imagen de la tabla.
         }
 
