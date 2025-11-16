@@ -59,6 +59,15 @@
             align-items: center;
             z-index: 1000;
             overflow-y: auto; 
+            padding: 20px 0;
+        }
+        .modal-content {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 560px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
 
         /* Estilos de botones de cartón */
@@ -91,7 +100,7 @@
         .status-sold {
             background-color: #ef4444; /* Rojo: Vendido */
             color: white;
-            opacity: 1; 
+            opacity: 0.6; 
             cursor: not-allowed;
             border: 2px solid #b91c1c;
         }
@@ -126,13 +135,60 @@
             70% { transform: scale(1.1); opacity: 1; }
             100% { transform: scale(1); }
         }
+
+        /* Estilos del Cronómetro */
+        #countdownTimer {
+            font-size: 2.5rem; 
+            font-weight: 900; 
+            color: #fcd34d; 
+            text-shadow: 2px 2px 0 #5b21b6; 
+            line-height: 1;
+        }
+
+        /* Estilo para los botones de la bolita de bingo */
+        .bingo-ball-btn {
+            background-color: #6b21a8; 
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            border: 2px solid #fcd34d;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        .bingo-ball-btn:hover {
+            transform: scale(1.05);
+        }
+        .bingo-ball-btn .ver-text {
+            font-size: 10px;
+            font-weight: normal;
+            margin-top: -3px;
+            color: #fcd34d;
+        }
     </style>
 </head>
 <body class="min-h-screen">
 
     <div class="max-w-xl mx-auto p-4 md:p-8">
         
-        <div class="bg-yellow-400 p-3 rounded-t-xl text-center shadow-lg border-b-2 border-purple-800">
+        <div class="bg-yellow-400 p-4 rounded-t-xl text-center shadow-lg border-b-2 border-purple-800 mb-4">
+            <p class="font-bold text-lg text-gray-900">
+                ¡DOMINGO <span id="bingoDate">16/11/25</span>!
+            </p>
+            <div class="mt-2 p-2 bg-purple-800 rounded-lg">
+                <p class="text-white text-sm">Comienza en:</p>
+                <div id="countdownTimer" class="text-4xl">--:--:--</div>
+            </div>
+        </div>
+        
+        <div class="bg-yellow-400 p-3 text-center shadow-lg border-b-2 border-purple-800">
             <p class="font-bold text-lg text-gray-900">
                 Costo de la Tabla (4 Cartas): Bs. <span id="cardCost">300,00</span>
             </p>
@@ -268,6 +324,13 @@
         </div>
 
         <div class="mt-12 text-center text-purple-100">
+             <div class="flex justify-center space-x-4 mb-4">
+                <a href="https://facebook.com/OMEGABingo" target="_blank" class="text-2xl text-purple-200 hover:text-white transition duration-200"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/2021_Facebook_icon.svg/48px-2021_Facebook_icon.svg.png" alt="Facebook" class="w-8 h-8 rounded-full"></a>
+                <a href="https://instagram.com/OMEGABingo" target="_blank" class="text-2xl text-purple-200 hover:text-white transition duration-200"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Instagram_icon.png/48px-Instagram_icon.png" alt="Instagram" class="w-8 h-8 rounded-full"></a>
+                <a href="https://tiktok.com/OMEGABingo" target="_blank" class="text-2xl text-purple-200 hover:text-white transition duration-200"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/TikTok_logo.svg/48px-TikTok_logo.svg.png" alt="TikTok" class="w-8 h-8 rounded-full"></a>
+                <a href="https://wa.me/584226431972" target="_blank" class="text-2xl text-purple-200 hover:text-white transition duration-200"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/48px-WhatsApp.svg.png" alt="WhatsApp" class="w-8 h-8 rounded-full"></a>
+            </div>
+            
             <img 
                 src="logo-omega-bingo.png" 
                 alt="logo bingo omega" 
@@ -275,49 +338,52 @@
                 id="footer-logo"
             >
             <p class="mt-4 text-sm drop-shadow-md">Para mas informacion consulta al Administrador Angel +584226431972</p>
+            <p class="mt-2 text-xs text-purple-200 drop-shadow-md">© Copyright 2025 OMEGA Bingo. Todos los derechos reservados.</p>
         </div>
     </div>
 
-    <div id="cardSelectionModal" class="modal">
-        <div class="bg-white rounded-xl p-6 w-11/12 max-w-lg shadow-2xl">
+    <div id="cardSelectionModal" class="modal" onclick="if(event.target.id === 'cardSelectionModal') hideCardSelectionModal()">
+        <div class="modal-content">
             <div class="flex justify-between items-center mb-4 border-b pb-2">
                 <h3 class="text-2xl font-bold text-purple-800">Selecciona tus Tablas</h3>
                 <button onclick="hideCardSelectionModal()" class="text-gray-500 hover:text-gray-800 text-2xl font-semibold">&times;</button>
             </div>
 
-            <div class="text-center mb-4">
-                <p class="text-lg font-bold">Total a Pagar: <span id="totalCostDisplay" class="text-green-600">Bs. 0,00</span></p>
-            </div>
-
             <div id="cardListContainer" class="max-h-80 overflow-y-auto p-2 grid grid-cols-6 gap-3 md:grid-cols-7 lg:grid-cols-8">
                 </div>
 
-            <div class="mt-6 pt-4 border-t text-center">
+            <div class="mt-6 text-center">
+                <p class="text-lg font-bold">Total a Pagar: <span id="totalCostDisplay" class="text-green-600">Bs. 0,00</span></p>
                  <button 
                     onclick="preparePayment()" 
-                    class="w-full px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition duration-150 shadow-xl active:scale-[0.98]"
+                    class="w-full mt-4 px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition duration-150 shadow-xl active:scale-[0.98]"
                 >
-                    Continuar Pago
+                    Continuar
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="paymentProcessModal" class="modal">
-        <div class="bg-white rounded-xl p-6 w-11/12 max-w-lg shadow-2xl">
+    <div id="paymentProcessModal" class="modal" onclick="if(event.target.id === 'paymentProcessModal') hidePaymentProcessModal()">
+        <div class="modal-content">
             <div class="flex justify-between items-center mb-4 border-b pb-2">
-                <h3 class="text-2xl font-bold text-purple-800">Proceso de Pago</h3>
+                <h3 class="text-2xl font-bold text-purple-800">Proceso de Compra</h3>
                 <button onclick="hidePaymentProcessModal()" class="text-gray-500 hover:text-gray-800 text-2xl font-semibold">&times;</button>
             </div>
             
-            <p class="text-sm text-gray-700 mb-4 bg-yellow-100 p-2 rounded">
-                *Tienes 05:00 para completar el pago y reservar tus Tablas.*
+            <p class="text-center font-bold text-sm text-gray-700 mb-4 bg-yellow-100 p-2 rounded flex items-center justify-center">
+                <svg class="w-5 h-5 mr-1 text-red-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.414L11 9.586V6z" clip-rule="evenodd"></path></svg>
+                Tienes <span id="paymentTimer" class="font-extrabold mx-1 text-red-600">05:00</span> para completar el pago.
             </p>
 
             <div class="space-y-4">
                 <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                    <span class="text-gray-600 font-semibold">Total a pagar:</span>
-                    <span id="paymentTotalCost" class="text-lg font-extrabold text-green-600">Bs. 0,00</span>
+                    <span class="text-gray-600 font-semibold">Monto Exacto:</span>
+                    <span id="paymentTotalCost" class="text-xl font-extrabold text-green-600">Bs. 0,00</span>
+                </div>
+                <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                    <span class="text-gray-600 font-semibold">Banco de Venezuela (0102)</span>
+                    <span class="text-md font-bold text-gray-900">04244945763 / V17450017</span>
                 </div>
                 <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
                     <span class="text-gray-600 font-semibold">Tablas N°:</span>
@@ -349,7 +415,8 @@
                     required
                 >
             </div>
-
+             <p class="text-center text-sm text-gray-500 mt-2">Sube o confirma el comprobante de pago con el administrador por WhatsApp.</p>
+            
             <div class="mt-6 pt-4 border-t text-center">
                  <button 
                     onclick="sendPurchaseToWhatsapp()" 
@@ -379,7 +446,7 @@
             "11": { name: "aa", phone: "04161647600", file: "tabla_11.png" },
             "5": { name: "María López", phone: "04267654321", file: "tabla_5.png" },
             "10": { name: "Angel Admin", phone: "04226431972", file: "tabla_10.png" },
-            // ... Aquí debes añadir el resto de tus ventas.
+            // ... Añadir el resto de tus ventas aquí para que se marquen como NO DISPONIBLES.
             "75": { name: "Última Tabla Vendida", phone: "04121112233", file: "tabla_75.png" }
         };
         
@@ -389,7 +456,14 @@
         const TOTAL_CARDS = 75; 
         const CARD_PRICE = 300.00; 
         let selectedCards = [];
-        const ADMIN_WHATSAPP = '584226431972'; // Tu número de administrador para recibir pedidos
+        const ADMIN_WHATSAPP = '584226431972'; 
+        let paymentTimerInterval;
+        let timerEnd; 
+
+        // Fecha del próximo bingo (ejemplo: Domingo 16 de Noviembre de 2025 a las 18:00:00)
+        // **ACTUALIZA ESTA FECHA PARA CADA SORTEO**
+        const BINGO_DATE = new Date('November 16, 2025 18:00:00').getTime(); 
+        document.getElementById('bingoDate').textContent = '16/11/25'; 
 
         // Inicializar el contador de disponibles al cargar la página
         function updateAvailableCount() {
@@ -397,6 +471,33 @@
             const availableCount = TOTAL_CARDS - soldCount;
             document.getElementById('availableCount').textContent = availableCount;
         }
+
+        // =========================================================================
+        // CRONÓMETRO DE BINGO
+        // =========================================================================
+        function updateBingoCountdown() {
+            const now = new Date().getTime();
+            const distance = BINGO_DATE - now;
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            let timerText;
+            if (distance < 0) {
+                clearInterval(bingoCountdownInterval);
+                timerText = '¡JUGANDO AHORA!';
+            } else if (days > 0) {
+                 timerText = `${days}D ${hours}H ${minutes}M`;
+            } else {
+                 timerText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            document.getElementById('countdownTimer').textContent = timerText;
+        }
+
+        const bingoCountdownInterval = setInterval(updateBingoCountdown, 1000);
 
 
         // =========================================================================
@@ -419,17 +520,27 @@
             container.innerHTML = '';
             
             for (let i = 1; i <= TOTAL_CARDS; i++) {
-                const isSold = CARD_SALES_DATA[i.toString()] !== undefined; // Verifica en el JSON
-                const statusClass = isSold ? 'status-sold' : 'status-available';
+                const isSold = CARD_SALES_DATA[i.toString()] !== undefined; 
+                let statusClass = isSold ? 'status-sold' : 'status-available';
+                
+                // Si ya estaba seleccionada antes (por ejemplo, si salió del modal)
+                if (selectedCards.includes(i)) {
+                    statusClass = 'status-selected';
+                }
+
                 const button = document.createElement('div');
                 
                 button.className = `card-selector-btn ${statusClass} active:scale-[0.98]`;
-                button.textContent = i;
+                button.innerHTML = `${i} <span class="ver-text">VER</span>`;
                 button.dataset.cardNum = i;
                 button.title = isSold ? `Tabla vendida a ${CARD_SALES_DATA[i.toString()]?.name || 'Jugador Asignado'}` : `Tabla N° ${i}`;
 
                 if (!isSold) {
+                    // Clic para SELECCIONAR/DESSELECCIONAR
                     button.onclick = () => toggleCardSelection(i, button);
+                } else {
+                    // Clic en vendida para ver (como en el ejemplo)
+                    button.onclick = () => showCardPreview(i);
                 }
                 
                 container.appendChild(button);
@@ -444,12 +555,22 @@
                 button.classList.remove('status-selected');
                 button.classList.add('status-available');
             } else {
+                // Límite opcional si lo deseas, ej: Máximo 5 Tablas
+                // if (selectedCards.length >= 5) { alert('Máximo 5 Tablas por compra.'); return; } 
+
                 selectedCards.push(cardNum);
                 button.classList.add('status-selected');
                 button.classList.remove('status-available');
             }
             selectedCards.sort((a, b) => a - b);
             updateTotalCostDisplay();
+        }
+
+        function showCardPreview(cardNumber) {
+            // Esta función simula el "Ver" la tabla
+            // Podrías usar esta lógica para cargar la imagen en un modal de vista previa.
+            alert(`Visualizando Tabla N° ${cardNumber}. Para ver los números completos, usa la sección de "Ver Tabla Individual" abajo.`);
+            // Aquí se podría abrir un tercer modal que muestre la imagen de la tabla.
         }
 
         function updateTotalCostDisplay() {
@@ -476,16 +597,39 @@
             document.getElementById('paymentTotalCost').textContent = `Bs. ${totalFormatted}`;
             document.getElementById('paymentCardsList').textContent = tablesList;
             
-            // Limpiar campos por si acaso
+            // Limpiar campos y activar cronómetro
             document.getElementById('payerName').value = '';
             document.getElementById('payerPhone').value = '';
             document.getElementById('referenceDigits').value = '';
 
+            startPaymentTimer(5 * 60); // 5 minutos en segundos
             document.getElementById('paymentProcessModal').style.display = 'flex';
         }
         
         function hidePaymentProcessModal() {
+            clearInterval(paymentTimerInterval); 
             document.getElementById('paymentProcessModal').style.display = 'none';
+        }
+
+        function startPaymentTimer(duration) {
+            clearInterval(paymentTimerInterval);
+            timerEnd = new Date().getTime() + (duration * 1000); 
+
+            paymentTimerInterval = setInterval(() => {
+                const now = new Date().getTime();
+                const distance = timerEnd - now;
+
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                if (distance < 0) {
+                    clearInterval(paymentTimerInterval);
+                    document.getElementById('paymentTimer').textContent = '¡TIEMPO AGOTADO!';
+                    // Aquí podrías añadir una lógica para "liberar" las tablas, pero se dejará así por simplicidad del sitio estático.
+                } else {
+                    document.getElementById('paymentTimer').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
         }
 
 
@@ -501,7 +645,9 @@
                 return;
             }
             
-            // Mensaje final para el administrador
+            clearInterval(paymentTimerInterval);
+
+            // Mensaje final para el administrador (tu número)
             const whatsappMessage = encodeURIComponent(
                 `🎉 ¡PAGO Y RESERVA OMEGA BINGO! 🎉\n\n` +
                 `*Tablas:* ${selectedCards.length} (${tablesList})\n` +
@@ -509,7 +655,7 @@
                 `*Nombre del Pagador:* ${payerName}\n` +
                 `*Teléfono del Pagador:* ${payerPhone}\n` +
                 `*Dígitos de Referencia (Pago Móvil):* ${referenceDigits}\n\n` +
-                `_¡Revisa y asigna las Tablas!_`
+                `_¡Revisa y asigna las Tablas en el archivo CARD_SALES_DATA!_`
             );
             
             const whatsappLink = `https://wa.me/${ADMIN_WHATSAPP}?text=${whatsappMessage}`;
@@ -518,13 +664,15 @@
 
             setTimeout(() => {
                 hidePaymentProcessModal();
+                // Abrir WhatsApp y luego limpiar la selección para una nueva compra
+                selectedCards = []; 
                 window.open(whatsappLink, '_blank');
             }, 1000); 
         }
 
 
         // =========================================================================
-        // FUNCIÓN: CONSULTA POR TELÉFONO
+        // FUNCIÓN: CONSULTA POR TELÉFONO (Igual a la original)
         // =========================================================================
 
         function searchCardByPhone() {
@@ -568,7 +716,6 @@
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'text-center p-2 border border-purple-300 rounded-lg shadow-md bg-white';
                 
-                // La ruta de la imagen en este caso también asume que está dentro de /tablas/
                 cardDiv.innerHTML = `
                     <p class="font-bold text-lg text-purple-700">Tabla ${card.table}</p>
                     <img src="./tablas/${card.file}" alt="Tabla ${card.table}" class="bingo-card-image w-full h-auto rounded-md mt-2 mx-auto"
@@ -584,7 +731,7 @@
 
 
         // =========================================================================
-        // FUNCIÓN: CONSULTA POR NÚMERO DE TABLA (LÓGICA ACTUALIZADA)
+        // FUNCIÓN: CONSULTA POR NÚMERO DE TABLA (Igual a la original)
         // =========================================================================
 
         function searchCard() {
@@ -602,7 +749,6 @@
 
             const assignment = CARD_SALES_DATA[cardNumber];
             
-            // La imagen siempre se busca aquí:
             const fileName = `tabla_${cardNumber}.png`; 
             const filePath = `./tablas/${fileName}`; 
 
@@ -612,7 +758,6 @@
             let assignedName, messageType, displayMessage;
 
             if (assignment) {
-                // Caso 1: VENDIDA (Muestra el nombre)
                 assignedName = assignment.name;
                 displayMessage = `Tabla N° ${cardNumber} encontrada y asignada a ${assignedName}. ¡Listo para descargar!`;
                 messageType = 'green';
@@ -620,7 +765,6 @@
                 assignedPlayerNameElement.classList.add('text-purple-600');
 
             } else {
-                // Caso 2: DISPONIBLE (Muestra mensaje de disponibilidad)
                 assignedName = '¡DISPONIBLE para la Venta!';
                 displayMessage = `Tabla N° ${cardNumber} no está asignada. ¡Puedes comprarla ahora!`;
                 messageType = 'yellow';
@@ -630,9 +774,8 @@
 
             assignedPlayerNameElement.textContent = assignedName;
             
-            // Muestra la imagen, si no la encuentra, muestra el placeholder.
             bingoCardDisplay.innerHTML = `<img src="${filePath}" alt="Tabla de Bingo N° ${cardNumber}" 
-                onerror="this.onerror=null; this.src='https://placehold.co/400x400/800080/FFFFFF?text=IMAGEN%20${cardNumber}%20NO%20HALLADA%20(Error%20de%20URL%20o%20No%20Existe)'; alert('Advertencia: No se encontró la imagen de la Tabla N° ${cardNumber} en la carpeta /tablas/.');" 
+                onerror="this.onerror=null; this.src='https://placehold.co/400x400/800080/FFFFFF?text=IMAGEN%20${cardNumber}%20NO%20HALLADA%20(Error%20de%20URL%20o%20No%20Existe)'; showMessage('Advertencia: No se encontró la imagen de la Tabla N° ${cardNumber} en la carpeta /tablas/.', 'red');" 
                 class="bingo-card-image w-full max-w-sm"
             />`;
 
@@ -642,7 +785,6 @@
             resultArea.classList.remove('hidden');
             showMessage(displayMessage, messageType);
 
-            // Animación para resaltar el nombre
             assignedPlayerNameElement.classList.add('animate-wiggle');
             setTimeout(() => {
                 assignedPlayerNameElement.classList.remove('animate-wiggle');
@@ -654,6 +796,7 @@
         // =========================================================================
 
         function showMessage(message, type) {
+            const messageArea = document.getElementById('messageArea');
             messageArea.textContent = message;
             messageArea.className = `text-center p-4 mb-4 text-sm rounded-lg border `;
             
@@ -696,6 +839,7 @@
         // Inicialización al cargar la página
         window.onload = function() {
             updateAvailableCount();
+            updateBingoCountdown(); 
         };
 
     </script>
