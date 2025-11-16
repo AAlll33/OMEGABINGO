@@ -124,8 +124,7 @@
         .status-sold .bingo-ball {
             background-color: #ef4444; /* Rojo: Vendido */
             color: white;
-            opacity: 0.7; 
-            cursor: not-allowed;
+            opacity: 0.8; 
             border: 2px solid #b91c1c;
         }
         
@@ -168,6 +167,23 @@
             text-shadow: 2px 2px 0 #5b21b6; 
             line-height: 1;
         }
+        
+        /* Estilos específicos para el modal de previsualización (simulando Bingo Carabobo) */
+        .card-preview-container {
+            border: 5px solid #22c55e; /* Borde verde como en Bingo Carabobo */
+            padding: 0.5rem;
+            background-color: #166534; /* Fondo verde oscuro */
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+        }
+        .card-preview-container img {
+            border: 3px solid #fcd34d; /* Borde amarillo alrededor de la carta */
+        }
+        .card-preview-container .preview-title {
+            color: #fcd34d; /* Amarillo para el título */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+
     </style>
 </head>
 <body class="min-h-screen">
@@ -360,6 +376,51 @@
         </div>
     </div>
 
+    <div id="cardPreviewModal" class="modal" onclick="if(event.target.id === 'cardPreviewModal') hideCardPreviewModal()">
+        <div class="modal-content !max-w-md">
+            <div class="flex justify-between items-start mb-4 border-b pb-2">
+                <h3 id="previewHeader" class="text-xl font-bold text-gray-800"></h3>
+                <button onclick="hideCardPreviewModal()" class="text-gray-500 hover:text-gray-800 text-2xl font-semibold">&times;</button>
+            </div>
+
+            <div class="card-preview-container p-3 text-center">
+                <h4 class="preview-title font-extrabold text-2xl mb-3">Cartón #<span id="previewCardNumber"></span></h4>
+                <div id="previewCardImage" class="flex justify-center">
+                    <img src="https://placehold.co/250x250/166534/fcd34d?text=TABLA%20PREVIEW" alt="Previsualización de Tabla" class="rounded-lg shadow-xl max-w-[250px] w-full"/>
+                </div>
+            </div>
+
+            <div class="mt-6 text-center">
+                <p class="text-sm font-semibold text-red-500 mb-3">Confirma si deseas elegir este cartón</p>
+                <div class="flex justify-center gap-4">
+                    <button id="previewLoQuieroBtn" 
+                        onclick="selectCardFromPreview()"
+                        class="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 shadow-md active:scale-[0.98] flex items-center"
+                    >
+                        <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                        LO QUIERO
+                    </button>
+                    <button 
+                        onclick="hideCardPreviewModal()"
+                        class="px-6 py-2 bg-gray-400 text-gray-900 font-semibold rounded-lg hover:bg-gray-500 transition duration-150 shadow-md active:scale-[0.98] flex items-center"
+                    >
+                         <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                        No lo quiero
+                    </button>
+                </div>
+            </div>
+            <div class="mt-4">
+                 <button 
+                    onclick="hideCardPreviewModal(); showCardSelectionModal();" 
+                    class="w-full mt-2 px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition duration-150 shadow-xl active:scale-[0.98]"
+                >
+                    Volver al Tablero
+                </button>
+            </div>
+        </div>
+    </div>
+
+
     <div id="paymentProcessModal" class="modal" onclick="if(event.target.id === 'paymentProcessModal') hidePaymentProcessModal()">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4 border-b pb-2">
@@ -452,6 +513,7 @@
         const TOTAL_CARDS = 75; 
         const CARD_PRICE = 300.00; 
         let selectedCards = [];
+        let cardToPreview = null; // Almacena el número de la tabla en el modal de preview
         const ADMIN_WHATSAPP = '584226431972'; 
         let paymentTimerInterval;
         let timerEnd; 
@@ -497,11 +559,11 @@
 
 
         // =========================================================================
-        // FUNCIONES MODAL DE SELECCIÓN (PASO 1) - **MODIFICADAS**
+        // FUNCIONES MODAL DE SELECCIÓN (PASO 1)
         // =========================================================================
 
         function showCardSelectionModal() {
-            selectedCards = []; 
+            // No limpiar selectedCards aquí para que las selecciones persistan al volver del preview
             updateTotalCostDisplay();
             document.getElementById('cardSelectionModal').style.display = 'flex';
             generateCardButtons();
@@ -519,35 +581,31 @@
                 const isSold = CARD_SALES_DATA[i.toString()] !== undefined; 
                 let statusClass = isSold ? 'status-sold' : 'status-available';
                 
-                // Si ya estaba seleccionada antes (por ejemplo, si salió del modal)
                 if (selectedCards.includes(i)) {
                     statusClass = 'status-selected';
                 }
 
-                // **Contenedor principal para la bola y el botón VER**
                 const itemContainer = document.createElement('div');
                 itemContainer.className = `card-item-container ${statusClass}`;
                 itemContainer.dataset.cardNum = i;
                 itemContainer.title = isSold ? `Tabla vendida a ${CARD_SALES_DATA[i.toString()]?.name || 'Jugador Asignado'}` : `Tabla N° ${i}`;
 
-                // **Elemento de la Bola (El área de clic principal)**
                 const ball = document.createElement('div');
                 ball.className = 'bingo-ball';
                 ball.textContent = i;
                 
-                // **Elemento del texto VER**
                 const verTag = document.createElement('div');
                 verTag.className = 'ver-tag';
-                verTag.textContent = 'VER';
-
-                // **Lógica de Clic**
-                if (!isSold) {
-                    // Clic para SELECCIONAR/DESSELECCIONAR
-                    itemContainer.onclick = () => toggleCardSelection(i, itemContainer);
+                
+                // Si está seleccionada, el "Ver" se convierte en "Ok" o "X" para desseleccionar visualmente
+                if (selectedCards.includes(i)) {
+                     verTag.textContent = 'OK'; // O podrías usar 'X' o '✓'
                 } else {
-                    // Clic en vendida para ver (como en el ejemplo, abre un preview/alerta)
-                    itemContainer.onclick = () => showCardPreview(i);
+                     verTag.textContent = 'VER';
                 }
+
+                // **Lógica de Clic: TODAS abren el preview, pero la acción "LO QUIERO" varía**
+                itemContainer.onclick = () => showCardPreviewModal(i);
                 
                 itemContainer.appendChild(ball);
                 itemContainer.appendChild(verTag);
@@ -556,29 +614,33 @@
         }
 
         function toggleCardSelection(cardNum, itemContainer) {
+            const verTag = itemContainer ? itemContainer.querySelector('.ver-tag') : null;
             const index = selectedCards.indexOf(cardNum);
             
             if (index > -1) {
                 selectedCards.splice(index, 1);
-                itemContainer.classList.remove('status-selected');
-                itemContainer.classList.add('status-available');
-            } else {
-                // Límite opcional si lo deseas, ej: Máximo 5 Tablas
-                // if (selectedCards.length >= 5) { alert('Máximo 5 Tablas por compra.'); return; } 
+                if (itemContainer) {
+                    itemContainer.classList.remove('status-selected');
+                    itemContainer.classList.add('status-available');
+                }
+                if (verTag) verTag.textContent = 'VER';
 
+            } else {
+                // Agregar la tarjeta
                 selectedCards.push(cardNum);
-                itemContainer.classList.add('status-selected');
-                itemContainer.classList.remove('status-available');
+                if (itemContainer) {
+                    itemContainer.classList.add('status-selected');
+                    itemContainer.classList.remove('status-available');
+                }
+                 if (verTag) verTag.textContent = 'OK';
             }
             selectedCards.sort((a, b) => a - b);
             updateTotalCostDisplay();
-        }
-
-        function showCardPreview(cardNumber) {
-            // Esta función simula el "Ver" la tabla
-            // Podrías usar esta lógica para cargar la imagen en un modal de vista previa.
-            alert(`Visualizando Tabla N° ${cardNumber}. Para ver los números completos, usa la sección de "Ver Tabla Individual" más abajo.`);
-            // Aquí se podría abrir un tercer modal que muestre la imagen de la tabla.
+            
+            // Si el preview está abierto, actualiza el estado del botón "Lo Quiero"
+            if (document.getElementById('cardPreviewModal').style.display === 'flex' && cardToPreview === cardNum) {
+                updatePreviewModalLoQuieroBtn(cardNum);
+            }
         }
 
         function updateTotalCostDisplay() {
@@ -587,7 +649,83 @@
         }
         
         // =========================================================================
-        // FUNCIONES MODAL DE PAGO (PASO 2)
+        // FUNCIONES MODAL DE PREVIEW (NUEVO - INSPIRADO EN CARABOBO)
+        // =========================================================================
+        
+        function showCardPreviewModal(cardNumber) {
+            cardToPreview = cardNumber;
+            const isSold = CARD_SALES_DATA[cardNumber.toString()] !== undefined;
+            const playerInfo = isSold ? `Vendida a: ${CARD_SALES_DATA[cardNumber.toString()].name}` : '¡Disponible para la Venta!';
+
+            // Título/Encabezado
+            const previewHeader = document.getElementById('previewHeader');
+            previewHeader.innerHTML = `Cartón N° ${cardNumber}`;
+
+            // Actualizar la imagen del cartón
+            const fileName = `tabla_${cardNumber}.png`; 
+            const filePath = `./tablas/${fileName}`; 
+            const imgElement = document.getElementById('previewCardImage').querySelector('img');
+            imgElement.src = filePath;
+            imgElement.alt = `Tabla N° ${cardNumber}`;
+            imgElement.onerror = function() {
+                 this.src='https://placehold.co/250x250/166534/fcd34d?text=TABLA%20${cardNumber}';
+            };
+
+            // Número de Cartón en el título verde
+            document.getElementById('previewCardNumber').textContent = cardNumber;
+            
+            // Mostrar modal y actualizar botón
+            document.getElementById('cardPreviewModal').style.display = 'flex';
+            updatePreviewModalLoQuieroBtn(cardNumber);
+        }
+
+        function hideCardPreviewModal() {
+            document.getElementById('cardPreviewModal').style.display = 'none';
+            cardToPreview = null;
+        }
+        
+        function updatePreviewModalLoQuieroBtn(cardNumber) {
+            const loQuieroBtn = document.getElementById('previewLoQuieroBtn');
+            const itemContainer = document.querySelector(`.card-item-container[data-card-num="${cardNumber}"]`);
+            const isSold = CARD_SALES_DATA[cardNumber.toString()] !== undefined;
+            const isSelected = selectedCards.includes(cardNumber);
+
+            if (isSold) {
+                loQuieroBtn.textContent = 'VENDIDO';
+                loQuieroBtn.disabled = true;
+                loQuieroBtn.className = 'px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md flex items-center opacity-70 cursor-not-allowed';
+            } else if (isSelected) {
+                loQuieroBtn.innerHTML = '<svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg> DEJAR';
+                loQuieroBtn.disabled = false;
+                loQuieroBtn.className = 'px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition duration-150 shadow-md active:scale-[0.98] flex items-center';
+            } else {
+                loQuieroBtn.innerHTML = '<svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> LO QUIERO';
+                loQuieroBtn.disabled = false;
+                loQuieroBtn.className = 'px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 shadow-md active:scale-[0.98] flex items-center';
+            }
+        }
+        
+        function selectCardFromPreview() {
+            if (cardToPreview === null) return;
+            
+            const itemContainer = document.querySelector(`.card-item-container[data-card-num="${cardToPreview}"]`);
+
+            if (selectedCards.includes(cardToPreview)) {
+                // Si ya está seleccionada, al darle "DEJAR" la desselecciona
+                toggleCardSelection(cardToPreview, itemContainer);
+            } else {
+                // Si no está seleccionada, al darle "LO QUIERO" la selecciona
+                 toggleCardSelection(cardToPreview, itemContainer);
+            }
+            
+            // Re-generar los botones del tablero en el modal de selección para actualizar el estado visual
+            generateCardButtons(); 
+            updatePreviewModalLoQuieroBtn(cardToPreview); 
+        }
+
+
+        // =========================================================================
+        // FUNCIONES MODAL DE PAGO (PASO 3)
         // =========================================================================
 
         function preparePayment() {
@@ -633,7 +771,6 @@
                 if (distance < 0) {
                     clearInterval(paymentTimerInterval);
                     document.getElementById('paymentTimer').textContent = '¡TIEMPO AGOTADO!';
-                    // Aquí podrías añadir una lógica para "liberar" las tablas, pero se dejará así por simplicidad del sitio estático.
                 } else {
                     document.getElementById('paymentTimer').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 }
@@ -672,15 +809,15 @@
 
             setTimeout(() => {
                 hidePaymentProcessModal();
-                // Abrir WhatsApp y luego limpiar la selección para una nueva compra
                 selectedCards = []; 
+                updateAvailableCount(); // Actualizar contador al limpiar selección
                 window.open(whatsappLink, '_blank');
             }, 1000); 
         }
 
 
         // =========================================================================
-        // FUNCIÓN: CONSULTA POR TELÉFONO (Igual a la original)
+        // FUNCIÓN: CONSULTA POR TELÉFONO 
         // =========================================================================
 
         function searchCardByPhone() {
@@ -724,6 +861,7 @@
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'text-center p-2 border border-purple-300 rounded-lg shadow-md bg-white';
                 
+                // Nota: Por la restricción de sitios estáticos, la imagen fallará a menos que la URL sea correcta.
                 cardDiv.innerHTML = `
                     <p class="font-bold text-lg text-purple-700">Tabla ${card.table}</p>
                     <img src="./tablas/${card.file}" alt="Tabla ${card.table}" class="bingo-card-image w-full h-auto rounded-md mt-2 mx-auto"
@@ -739,7 +877,7 @@
 
 
         // =========================================================================
-        // FUNCIÓN: CONSULTA POR NÚMERO DE TABLA (Igual a la original)
+        // FUNCIÓN: CONSULTA POR NÚMERO DE TABLA 
         // =========================================================================
 
         function searchCard() {
