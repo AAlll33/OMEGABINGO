@@ -70,9 +70,7 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
 
-        /* * ESTILOS DE BOTONES DE CARTÓN (MODIFICADOS)
-         * Se cambia de card-selector-btn a card-item-container para el contenedor general 
-         */
+        /* * ESTILOS DE BOTONES DE CARTÓN (MODIFICADOS) */
         .card-item-container {
             display: flex;
             flex-direction: column;
@@ -115,14 +113,20 @@
             border: 2px solid #5b21b6;
         }
         .status-selected .bingo-ball {
-            background-color: #fcd34d; /* Amarillo: Seleccionado */
+            background-color: #fcd34d; /* Amarillo: Seleccionado (por el jugador actual, previo a reservar) */
             color: #1f2937; 
             border: 2px solid #fbbf24;
             transform: scale(1.08);
             box-shadow: 0 6px 10px rgba(0,0,0,0.4);
         }
+        .status-reserved .bingo-ball {
+            background-color: #f97316; /* NARANJA: Reservado por otro jugador (temporalmente) */
+            color: white; 
+            opacity: 0.9;
+            border: 2px solid #ea580c;
+        }
         .status-sold .bingo-ball {
-            background-color: #ef4444; /* Rojo: Vendido */
+            background-color: #ef4444; /* Rojo: Vendido (Permanente) */
             color: white;
             opacity: 0.8; 
             border: 2px solid #b91c1c;
@@ -241,7 +245,7 @@
                     <span class="text-gray-600 font-semibold">Teléfono:</span>
                     <span id="phoneInfo" class="text-gray-900 font-extrabold flex items-center">
                         04129546751
-                        <svg onclick="copyToClipboard('04226431972')" class="copy-btn w-4 h-4 ml-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"></path><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3h-2a3 3 0 01-3-3H6zm8 6a1 1 0 100-2 1 1 0 000 2z"></path></svg>
+                        <svg onclick="copyToClipboard('04129546751')" class="copy-btn w-4 h-4 ml-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"></path><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3h-2a3 3 0 01-3-3H6zm8 6a1 1 0 100-2 1 1 0 000 2z"></path></svg>
                     </span>
                 </div>
             </div>
@@ -439,8 +443,8 @@
                     <span id="paymentTotalCost" class="text-xl font-extrabold text-green-600">Bs. 0,00</span>
                 </div>
                 <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                    <span class="text-gray-600 font-semibold">Banco de Venezuela (0102)</span>
-                    <span class="text-md font-bold text-gray-900">04244945763 / V17450017</span>
+                    <span class="text-gray-600 font-semibold">Banco Provincial (0108)</span>
+                    <span class="text-md font-bold text-gray-900">04129546751 / V25822059</span>
                 </div>
                 <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
                     <span class="text-gray-600 font-semibold">Tablas N°:</span>
@@ -503,35 +507,84 @@
             "11": { name: "aa", phone: "04161647600", file: "tabla_11.png" },
             "5": { name: "María López", phone: "04267654321", file: "tabla_5.png" },
             "10": { name: "Angel Admin", phone: "04226431972", file: "tabla_10.png" },
-            // ... Añadir el resto de tus ventas aquí para que se marquen como NO DISPONIBLES.
             "75": { name: "Última Tabla Vendida", phone: "04121112233", file: "tabla_75.png" }
         };
         
+        /**
+         * Almacenamiento temporal para reservas (simula un backend o base de datos)
+         * Clave: Número de Tabla (string)
+         * Valor: { reservedBy: Teléfono del jugador, timestamp: Tiempo de reserva (ms) }
+         */
+        let RESERVATION_DATA = JSON.parse(localStorage.getItem('OMEGA_RESERVATIONS')) || {};
+        const RESERVATION_DURATION_MS = 5 * 60 * 1000; // 5 minutos en milisegundos
+
         // =========================================================================
         // DATOS Y VARIABLES GLOBALES
         // =========================================================================
         const TOTAL_CARDS = 75; 
         const CARD_PRICE = 300.00; 
         let selectedCards = [];
-        let cardToPreview = null; // Almacena el número de la tabla en el modal de preview
+        let cardToPreview = null; 
         const ADMIN_WHATSAPP = '584226431972'; 
         let paymentTimerInterval;
-        let timerEnd; 
+        
+        // **FECHA DE BINGO FIJA** (El cronómetro correrá continuo)
+        const BINGO_START_TIME = 'November 16, 2025 20:00:00'; // 8:00 PM
+        const BINGO_DATE = new Date(BINGO_START_TIME).getTime(); 
 
-        // Fecha del próximo bingo (ejemplo: Domingo 16 de Noviembre de 2025 a las 18:00:00)
-        // **ACTUALIZA ESTA FECHA PARA CADA SORTEO**
-        const BINGO_DATE = new Date('November 16, 2025 18:00:00').getTime(); 
-        document.getElementById('bingoDate').textContent = '16/11/25'; 
+        // Datos de Pago Móvil actualizados
+        const PAYMENT_DATA = {
+            bank: '0108 (Provincial BBVA)',
+            cedula: 'V25822059',
+            phone: '04129546751',
+        };
+        document.getElementById('bankInfo').textContent = PAYMENT_DATA.bank.split('(')[0].trim() + ' (Provincial BBVA)'; // Mantener el código
+        document.getElementById('idInfo').textContent = PAYMENT_DATA.cedula;
+        document.getElementById('phoneInfo').textContent = PAYMENT_DATA.phone;
+
+
+        // =========================================================================
+        // FUNCIÓN DE UTILIDAD: MANEJO DE RESERVAS Y LOCAL STORAGE
+        // =========================================================================
+
+        function saveReservations() {
+            // Solo se guarda el estado de reserva en el local storage
+            localStorage.setItem('OMEGA_RESERVATIONS', JSON.stringify(RESERVATION_DATA));
+        }
+
+        function checkAndClearReservations() {
+            const now = new Date().getTime();
+            let changed = false;
+            
+            for (const tableNum in RESERVATION_DATA) {
+                if (now - RESERVATION_DATA[tableNum].timestamp > RESERVATION_DURATION_MS) {
+                    delete RESERVATION_DATA[tableNum];
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                saveReservations();
+                // Si la selección modal está abierta, la regeneramos para reflejar el cambio
+                if (document.getElementById('cardSelectionModal').style.display === 'flex') {
+                    generateCardButtons();
+                }
+            }
+        }
+        
+        // Ejecutar cada minuto para limpiar reservas expiradas
+        setInterval(checkAndClearReservations, 60000); 
 
         // Inicializar el contador de disponibles al cargar la página
         function updateAvailableCount() {
+            checkAndClearReservations(); // Limpiar antes de contar
             const soldCount = Object.keys(CARD_SALES_DATA).length;
             const availableCount = TOTAL_CARDS - soldCount;
             document.getElementById('availableCount').textContent = availableCount;
         }
 
         // =========================================================================
-        // CRONÓMETRO DE BINGO
+        // CRONÓMETRO DE BINGO (CONTINUO)
         // =========================================================================
         function updateBingoCountdown() {
             const now = new Date().getTime();
@@ -563,7 +616,8 @@
         // =========================================================================
 
         function showCardSelectionModal() {
-            // No limpiar selectedCards aquí para que las selecciones persistan al volver del preview
+            // Asegurarse de que las reservas expiradas se limpien antes de mostrar
+            checkAndClearReservations(); 
             updateTotalCostDisplay();
             document.getElementById('cardSelectionModal').style.display = 'flex';
             generateCardButtons();
@@ -578,17 +632,24 @@
             container.innerHTML = '';
             
             for (let i = 1; i <= TOTAL_CARDS; i++) {
-                const isSold = CARD_SALES_DATA[i.toString()] !== undefined; 
-                let statusClass = isSold ? 'status-sold' : 'status-available';
-                
-                if (selectedCards.includes(i)) {
+                const tableNumStr = i.toString();
+                const isSold = CARD_SALES_DATA[tableNumStr] !== undefined; 
+                const isReserved = RESERVATION_DATA[tableNumStr] !== undefined;
+                let statusClass = 'status-available';
+
+                if (isSold) {
+                    statusClass = 'status-sold';
+                } else if (isReserved) {
+                    statusClass = 'status-reserved';
+                } else if (selectedCards.includes(i)) {
                     statusClass = 'status-selected';
                 }
 
                 const itemContainer = document.createElement('div');
                 itemContainer.className = `card-item-container ${statusClass}`;
                 itemContainer.dataset.cardNum = i;
-                itemContainer.title = isSold ? `Tabla vendida a ${CARD_SALES_DATA[i.toString()]?.name || 'Jugador Asignado'}` : `Tabla N° ${i}`;
+                itemContainer.title = isSold ? `Tabla vendida a ${CARD_SALES_DATA[tableNumStr]?.name || 'Jugador Asignado'}` 
+                                    : (isReserved ? 'Tabla reservada (5 min)' : `Tabla N° ${i}`);
 
                 const ball = document.createElement('div');
                 ball.className = 'bingo-ball';
@@ -597,15 +658,23 @@
                 const verTag = document.createElement('div');
                 verTag.className = 'ver-tag';
                 
-                // Si está seleccionada, el "Ver" se convierte en "Ok" o "X" para desseleccionar visualmente
-                if (selectedCards.includes(i)) {
-                     verTag.textContent = 'OK'; // O podrías usar 'X' o '✓'
+                // Texto de la etiqueta
+                if (isSold) {
+                    verTag.textContent = 'VENDIDA';
+                } else if (isReserved) {
+                    verTag.textContent = 'RESERVA';
+                } else if (selectedCards.includes(i)) {
+                     verTag.textContent = 'OK'; 
                 } else {
                      verTag.textContent = 'VER';
                 }
 
-                // **Lógica de Clic: TODAS abren el preview, pero la acción "LO QUIERO" varía**
-                itemContainer.onclick = () => showCardPreviewModal(i);
+                // Las tablas vendidas o reservadas no se pueden seleccionar, solo ver.
+                if (isSold || isReserved) {
+                    itemContainer.onclick = () => showCardPreviewModal(i);
+                } else {
+                    itemContainer.onclick = () => showCardPreviewModal(i);
+                }
                 
                 itemContainer.appendChild(ball);
                 itemContainer.appendChild(verTag);
@@ -614,10 +683,15 @@
         }
 
         function toggleCardSelection(cardNum, itemContainer) {
+            const tableNumStr = cardNum.toString();
             const verTag = itemContainer ? itemContainer.querySelector('.ver-tag') : null;
             const index = selectedCards.indexOf(cardNum);
             
+            // Si está vendida o reservada, no se puede seleccionar/desseleccionar
+            if (CARD_SALES_DATA[tableNumStr] || RESERVATION_DATA[tableNumStr]) return;
+            
             if (index > -1) {
+                // Desseleccionar la tarjeta
                 selectedCards.splice(index, 1);
                 if (itemContainer) {
                     itemContainer.classList.remove('status-selected');
@@ -626,7 +700,7 @@
                 if (verTag) verTag.textContent = 'VER';
 
             } else {
-                // Agregar la tarjeta
+                // Seleccionar la tarjeta
                 selectedCards.push(cardNum);
                 if (itemContainer) {
                     itemContainer.classList.add('status-selected');
@@ -637,7 +711,7 @@
             selectedCards.sort((a, b) => a - b);
             updateTotalCostDisplay();
             
-            // Si el preview está abierto, actualiza el estado del botón "Lo Quiero"
+            // Actualizar el estado del botón "Lo Quiero" en el preview si está abierto
             if (document.getElementById('cardPreviewModal').style.display === 'flex' && cardToPreview === cardNum) {
                 updatePreviewModalLoQuieroBtn(cardNum);
             }
@@ -649,13 +723,14 @@
         }
         
         // =========================================================================
-        // FUNCIONES MODAL DE PREVIEW (NUEVO - INSPIRADO EN CARABOBO)
+        // FUNCIONES MODAL DE PREVIEW
         // =========================================================================
         
         function showCardPreviewModal(cardNumber) {
             cardToPreview = cardNumber;
-            const isSold = CARD_SALES_DATA[cardNumber.toString()] !== undefined;
-            const playerInfo = isSold ? `Vendida a: ${CARD_SALES_DATA[cardNumber.toString()].name}` : '¡Disponible para la Venta!';
+            const tableNumStr = cardNumber.toString();
+            const isSold = CARD_SALES_DATA[tableNumStr] !== undefined;
+            const isReserved = RESERVATION_DATA[tableNumStr] !== undefined;
 
             // Título/Encabezado
             const previewHeader = document.getElementById('previewHeader');
@@ -686,14 +761,19 @@
         
         function updatePreviewModalLoQuieroBtn(cardNumber) {
             const loQuieroBtn = document.getElementById('previewLoQuieroBtn');
-            const itemContainer = document.querySelector(`.card-item-container[data-card-num="${cardNumber}"]`);
-            const isSold = CARD_SALES_DATA[cardNumber.toString()] !== undefined;
+            const tableNumStr = cardNumber.toString();
+            const isSold = CARD_SALES_DATA[tableNumStr] !== undefined;
+            const isReserved = RESERVATION_DATA[tableNumStr] !== undefined;
             const isSelected = selectedCards.includes(cardNumber);
 
             if (isSold) {
                 loQuieroBtn.textContent = 'VENDIDO';
                 loQuieroBtn.disabled = true;
                 loQuieroBtn.className = 'px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md flex items-center opacity-70 cursor-not-allowed';
+            } else if (isReserved) {
+                loQuieroBtn.textContent = 'RESERVADO';
+                loQuieroBtn.disabled = true;
+                loQuieroBtn.className = 'px-6 py-2 bg-orange-600 text-white font-semibold rounded-lg shadow-md flex items-center opacity-70 cursor-not-allowed';
             } else if (isSelected) {
                 loQuieroBtn.innerHTML = '<svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg> DEJAR';
                 loQuieroBtn.disabled = false;
@@ -727,12 +807,27 @@
         // =========================================================================
         // FUNCIONES MODAL DE PAGO (PASO 3)
         // =========================================================================
+        
+        let paymentTimerEndByPhone = JSON.parse(localStorage.getItem('OMEGA_PAYMENT_TIMERS')) || {};
+        const PAYMENT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutos
 
         function preparePayment() {
             if (selectedCards.length === 0) {
                 alert('Por favor, selecciona al menos una Tabla para continuar.');
                 return;
             }
+            
+            // PRIMER PASO DE RESERVA: Marcar las tablas seleccionadas como 'reserved'
+            const now = new Date().getTime();
+            selectedCards.forEach(cardNum => {
+                const tableNumStr = cardNum.toString();
+                // Solo reservar si no está vendida y no está ya reservada por otro
+                if (!CARD_SALES_DATA[tableNumStr] && !RESERVATION_DATA[tableNumStr]) {
+                     // El 'reservedBy' se establecerá con el número de teléfono cuando se abra el modal de pago
+                    RESERVATION_DATA[tableNumStr] = { reservedBy: 'PENDING_PHONE', timestamp: now };
+                }
+            });
+            saveReservations();
             
             hideCardSelectionModal();
             
@@ -745,11 +840,12 @@
             
             // Limpiar campos y activar cronómetro
             document.getElementById('payerName').value = '';
-            document.getElementById('payerPhone').value = '';
+            // El campo de teléfono es clave, lo limpiaremos, pero su valor determinará el temporizador
+            document.getElementById('payerPhone').value = ''; 
             document.getElementById('referenceDigits').value = '';
 
-            startPaymentTimer(5 * 60); // 5 minutos en segundos
             document.getElementById('paymentProcessModal').style.display = 'flex';
+            // El temporizador real se inicia cuando el jugador ingresa su teléfono
         }
         
         function hidePaymentProcessModal() {
@@ -757,9 +853,33 @@
             document.getElementById('paymentProcessModal').style.display = 'none';
         }
 
-        function startPaymentTimer(duration) {
+        function startContinuousPaymentTimer(phoneNumber) {
             clearInterval(paymentTimerInterval);
-            timerEnd = new Date().getTime() + (duration * 1000); 
+            
+            const now = new Date().getTime();
+            let timerEnd;
+            let storedEnd = paymentTimerEndByPhone[phoneNumber];
+
+            // 1. Verificar si hay un temporizador previo asociado a este teléfono
+            if (storedEnd && storedEnd > now) {
+                timerEnd = storedEnd;
+            } else {
+                // 2. Si no hay o ya expiró, iniciar uno nuevo de 5 minutos
+                timerEnd = now + PAYMENT_TIMEOUT_MS;
+                paymentTimerEndByPhone[phoneNumber] = timerEnd;
+                localStorage.setItem('OMEGA_PAYMENT_TIMERS', JSON.stringify(paymentTimerEndByPhone));
+                
+                // Actualizar la reserva en RESERVATION_DATA con el teléfono real si es la primera vez que se activa
+                selectedCards.forEach(cardNum => {
+                    const tableNumStr = cardNum.toString();
+                    if (RESERVATION_DATA[tableNumStr] && RESERVATION_DATA[tableNumStr].reservedBy === 'PENDING_PHONE') {
+                        RESERVATION_DATA[tableNumStr].reservedBy = phoneNumber;
+                        RESERVATION_DATA[tableNumStr].timestamp = now;
+                    }
+                });
+                saveReservations();
+                generateCardButtons(); // Regenerar para reflejar el estado RESERVED
+            }
 
             paymentTimerInterval = setInterval(() => {
                 const now = new Date().getTime();
@@ -767,36 +887,62 @@
 
                 const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                const timerElement = document.getElementById('paymentTimer');
 
                 if (distance < 0) {
                     clearInterval(paymentTimerInterval);
-                    document.getElementById('paymentTimer').textContent = '¡TIEMPO AGOTADO!';
+                    timerElement.textContent = '¡TIEMPO AGOTADO!';
+                    // Simular liberación de tablas (en un entorno real, el backend lo haría)
+                    selectedCards.forEach(cardNum => {
+                        delete RESERVATION_DATA[cardNum.toString()];
+                    });
+                    saveReservations();
+                    selectedCards = [];
+                    // Opcional: Cerrar modal y mostrar alerta
                 } else {
-                    document.getElementById('paymentTimer').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 }
             }, 1000);
         }
+        
+        // Listener para iniciar el contador cuando el jugador ingresa su teléfono
+        document.getElementById('payerPhone').addEventListener('blur', function() {
+            const phone = this.value.trim().replace(/[^0-9]/g, '');
+            if (phone.length >= 10) {
+                startContinuousPaymentTimer(phone);
+            }
+        });
 
 
         function sendPurchaseToWhatsapp() {
             const payerName = document.getElementById('payerName').value.trim();
-            const payerPhone = document.getElementById('payerPhone').value.trim();
+            const payerPhone = document.getElementById('payerPhone').value.trim().replace(/[^0-9]/g, ''); // Limpiar el teléfono
             const referenceDigits = document.getElementById('referenceDigits').value.trim();
             const totalAmount = selectedCards.length * CARD_PRICE;
             const tablesList = selectedCards.join(', ');
 
-            if (!payerName || !payerPhone || referenceDigits.length !== 4) {
-                alert('Por favor, completa tu Nombre, tu Teléfono de WhatsApp y los 4 dígitos de la referencia del pago móvil.');
+            if (!payerName || payerPhone.length < 10 || referenceDigits.length !== 4) {
+                alert('Por favor, completa tu Nombre, tu Teléfono de WhatsApp (mín. 10 dígitos) y los 4 dígitos de la referencia del pago móvil.');
                 return;
             }
             
             clearInterval(paymentTimerInterval);
+            delete paymentTimerEndByPhone[payerPhone]; // El pago está listo, borramos el temporizador de pago.
+            localStorage.setItem('OMEGA_PAYMENT_TIMERS', JSON.stringify(paymentTimerEndByPhone));
+
+            // Eliminar la reserva de las tablas seleccionadas (se moverán a CARD_SALES_DATA por el admin)
+            selectedCards.forEach(cardNum => {
+                 delete RESERVATION_DATA[cardNum.toString()];
+            });
+            saveReservations();
+
 
             // Mensaje final para el administrador (tu número)
             const whatsappMessage = encodeURIComponent(
                 `🎉 ¡PAGO Y RESERVA OMEGA BINGO! 🎉\n\n` +
                 `*Tablas:* ${selectedCards.length} (${tablesList})\n` +
                 `*Monto Pagado:* Bs. ${totalAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}\n` +
+                `*Banco/Cédula Pagador:* ${PAYMENT_DATA.bank.split('(')[0].trim()} / ${PAYMENT_DATA.cedula}\n` +
                 `*Nombre del Pagador:* ${payerName}\n` +
                 `*Teléfono del Pagador:* ${payerPhone}\n` +
                 `*Dígitos de Referencia (Pago Móvil):* ${referenceDigits}\n\n` +
@@ -810,17 +956,20 @@
             setTimeout(() => {
                 hidePaymentProcessModal();
                 selectedCards = []; 
-                updateAvailableCount(); // Actualizar contador al limpiar selección
+                updateAvailableCount(); 
                 window.open(whatsappLink, '_blank');
             }, 1000); 
         }
 
 
         // =========================================================================
-        // FUNCIÓN: CONSULTA POR TELÉFONO 
+        // FUNCIÓN: CONSULTA POR TELÉFONO y NÚMERO DE TABLA 
         // =========================================================================
 
+        // (Las funciones searchCardByPhone y searchCard se mantienen igual, solo se actualiza el nombre de la variable de pago móvil)
+
         function searchCardByPhone() {
+            // ... (implementación de searchCardByPhone) ...
             const phoneInput = document.getElementById('searchPhoneInput');
             const searchPhone = phoneInput.value.trim().replace(/[^0-9]/g, ''); 
             
@@ -861,7 +1010,6 @@
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'text-center p-2 border border-purple-300 rounded-lg shadow-md bg-white';
                 
-                // Nota: Por la restricción de sitios estáticos, la imagen fallará a menos que la URL sea correcta.
                 cardDiv.innerHTML = `
                     <p class="font-bold text-lg text-purple-700">Tabla ${card.table}</p>
                     <img src="./tablas/${card.file}" alt="Tabla ${card.table}" class="bingo-card-image w-full h-auto rounded-md mt-2 mx-auto"
@@ -876,11 +1024,8 @@
         }
 
 
-        // =========================================================================
-        // FUNCIÓN: CONSULTA POR NÚMERO DE TABLA 
-        // =========================================================================
-
         function searchCard() {
+            // ... (implementación de searchCard) ...
             const inputElement = document.getElementById('cardNumberInput');
             const rawCardNumber = inputElement.value.trim();
             const cardNumber = parseInt(rawCardNumber, 10).toString();
@@ -894,6 +1039,7 @@
             }
 
             const assignment = CARD_SALES_DATA[cardNumber];
+            const isReserved = RESERVATION_DATA[cardNumber] !== undefined;
             
             const fileName = `tabla_${cardNumber}.png`; 
             const filePath = `./tablas/${fileName}`; 
@@ -907,14 +1053,22 @@
                 assignedName = assignment.name;
                 displayMessage = `Tabla N° ${cardNumber} encontrada y asignada a ${assignedName}. ¡Listo para descargar!`;
                 messageType = 'green';
-                assignedPlayerNameElement.classList.remove('text-yellow-600');
+                assignedPlayerNameElement.classList.remove('text-yellow-600', 'text-red-600');
                 assignedPlayerNameElement.classList.add('text-purple-600');
+
+            } else if (isReserved) {
+                // Si está reservada, mostramos este estado
+                assignedName = 'RESERVADA (5 MIN)';
+                displayMessage = `Tabla N° ${cardNumber} está reservada temporalmente. Intenta en unos minutos.`;
+                messageType = 'yellow';
+                assignedPlayerNameElement.classList.remove('text-purple-600', 'text-yellow-600');
+                assignedPlayerNameElement.classList.add('text-red-600'); // Usar rojo para "no disponible"
 
             } else {
                 assignedName = '¡DISPONIBLE para la Venta!';
                 displayMessage = `Tabla N° ${cardNumber} no está asignada. ¡Puedes comprarla ahora!`;
                 messageType = 'yellow';
-                assignedPlayerNameElement.classList.remove('text-purple-600');
+                assignedPlayerNameElement.classList.remove('text-purple-600', 'text-red-600');
                 assignedPlayerNameElement.classList.add('text-yellow-600');
             }
 
